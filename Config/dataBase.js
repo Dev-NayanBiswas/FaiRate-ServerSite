@@ -13,8 +13,10 @@ client.connect();
 
 const dataBase = client.db("FaiRate");
 const allReviews = dataBase.collection("AllReviews");
+const services = dataBase.collection("AllServices");
 
 
 module.exports = {
-    allReviews
+    allReviews,
+    services
 }
