@@ -101,7 +101,14 @@ app.patch("/services/:id", asyncErrorHandler(
 
 app.post("/allReviews", asyncErrorHandler(
     async(req,res, next)=>{
-        res.send("Hitting All Reviews")
+        const userInfo = req.body;
+        try{
+            const result = await allReviews.insertOne(userInfo);
+            res.status(200).send({message:"Review posted Successfully", result: result})
+        }catch(error){
+            next(new CustomErrors("Failed to Update Service", 500))
+        }
+
     }
 ))
 
@@ -158,3 +165,6 @@ app.listen(PORT,()=>{
 //   } catch (error) {
 //     next(error);
 //   }
+
+
+// {comment, rating, name, email, image, postedDate, serviceID}
