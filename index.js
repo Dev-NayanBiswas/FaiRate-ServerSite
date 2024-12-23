@@ -21,14 +21,15 @@ const {allReviews,services} = require('./Config/dataBase.js')
 const CustomErrors = require('./Errors/CustomErrors.js');
 //! Global Error Handlers 
 const GlobalErrorController = require('./Controllers/GlobalErrorController.js')
-const asyncErrorHandler = require('./Controllers/asyncErrorHandler.js')
+const asyncErrorHandler = require('./Controllers/asyncErrorHandler.js');
+const { ObjectId } = require('mongodb');
 
 
 
 
 
 //! AllServices 
-app.get("/featureServices", asyncErrorHandler(
+app.get("/services", asyncErrorHandler(
     async(req,res,next)=>{
         let defaultLimit;
         const {limit} = req.query;
@@ -36,8 +37,15 @@ app.get("/featureServices", asyncErrorHandler(
             defaultLimit = limit
         }
         const result = await services.find({}).limit(Number(defaultLimit)).toArray();
-        console.log(result)
         res.status(200).send(result)
+    }
+))
+
+app.get("/services/:id",asyncErrorHandler(
+    async(req, res, next)=>{
+        const {id} = req.params;
+        const result = await services.findOne({_id: new ObjectId(id)});
+        res.send(result)
     }
 ))
 
@@ -68,6 +76,34 @@ app.post("/faiRate", asyncErrorHandler(
 ))
 
 
+//! Updating or Adding  Review Count
+app.patch("/services/:id", asyncErrorHandler(
+    async(req, res, next)=>{
+        const {id} = req.params;
+        if(!ObjectId.isValid(id)){
+            throw new CustomErrors("Invalid ID", 400)
+        }
+        const filter = {_id: new ObjectId(id)};
+        const updatedValue = {
+            // $setOnInsert: {reviewCount:1},
+            $inc:{reviewCount:1},
+        };
+        try{
+            const result = await services.updateOne(filter,updatedValue,{upsert:true});
+        res.status(200).send({message:"Review Count Updated", result: result})
+        }catch(error){
+            next(new CustomErrors("Failed to Update Service", 500))
+        }
+    }
+))
+
+//! Adding Reviews 
+
+app.post("/allReviews", asyncErrorHandler(
+    async(req,res, next)=>{
+        res.send("Hitting All Reviews")
+    }
+))
 
 
 
