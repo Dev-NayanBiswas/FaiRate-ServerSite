@@ -98,7 +98,6 @@ app.patch("/services/:id", asyncErrorHandler(
 ))
 
 //! Adding Reviews 
-
 app.post("/allReviews", asyncErrorHandler(
     async(req,res, next)=>{
         const userInfo = req.body;
@@ -112,9 +111,34 @@ app.post("/allReviews", asyncErrorHandler(
     }
 ))
 
+//// Get Service Reviews 
+app.get("/serviceReviews", asyncErrorHandler(
+    async(req,res,next)=>{
+        const {serviceID, email} = req.query;
+        let defaultQuery;
+
+        if(serviceID){
+            const filter = {serviceID}
+            defaultQuery = filter
+        }
+        if(email){
+            defaultQuery = {email};
+        }
+        try{
+            const result = await allReviews.find(defaultQuery).toArray();
+            res.status(200).send({
+                message:"Review Fetched Successfully",
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Failed to Load Reviews", 500))
+        }
+    }
+))
 
 
-//!404  Found Error
+
+//!404  notFound Error
 app.use((req,res,next)=>{
     const err = new CustomErrors(`Can't find ${req.originalUrl} on Server!`, 404);
     next(err);
