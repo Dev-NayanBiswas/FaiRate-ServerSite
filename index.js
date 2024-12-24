@@ -112,7 +112,13 @@ app.put("/updateService/:id", asyncErrorHandler(
 //! Delete MyService 
 app.delete("/myService/:id", asyncErrorHandler(
     async(req, res, next)=>{
-        console.log(req.params.id)
+        const{id}=req.params;
+        try{
+            const result = await services.deleteOne({_id: new ObjectId(id)})
+            res.status(200).send({message:"Service Deleted Successfully", result:result})
+        }catch(error){
+            next(new CustomErrors("Error in Removing Service", 500))
+        }
     }
 ))
 
