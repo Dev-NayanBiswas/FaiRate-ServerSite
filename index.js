@@ -136,6 +136,7 @@ app.get("/serviceReviews", asyncErrorHandler(
     }
 ))
 
+//! Delete MyReview 
 app.delete("/myReviews/:id", asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
@@ -147,6 +148,25 @@ app.delete("/myReviews/:id", asyncErrorHandler(
             })
         }catch(error){
             next(new CustomErrors("Error in Review Delete", 500))
+        }
+    }
+))
+
+//! Update MyReview 
+app.put("/updateReview/:id", asyncErrorHandler(
+    async(req,res,next)=>{
+        const {id} = req.params;
+        const {comment, rating} = req.body
+        console.log(comment, rating)
+        const options = {$set:{comment, rating}}
+        try{
+            const result = await allReviews.updateOne({_id:new ObjectId(id)},options,{upsert:true});
+            res.status(200).send({
+                message:"Review Updated Successfully",
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Error in updating Review", 500))
         }
     }
 ))
