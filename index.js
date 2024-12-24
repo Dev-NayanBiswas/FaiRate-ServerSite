@@ -89,6 +89,32 @@ app.get("/myServices", asyncErrorHandler(
         }
     }
 ))
+//! Update MyServices 
+app.put("/updateService/:id", asyncErrorHandler(
+    async(req,res,next)=>{
+        const {id} = req.params;
+        console.log(id)
+        const data = req.body;
+        console.log(data)
+        const updatedData = {
+            $set:{...data}
+        }
+        try{
+            const result = await services.updateOne({_id:new ObjectId(id)},updatedData,{upsert:true});
+            res.status(200).send({message:"Successfully Updated", result:result})
+        }catch(error){
+            next(new CustomErrors("Error in Updating MyServices", 500))
+        }
+        console.log(data, id);
+    }
+))
+
+//! Delete MyService 
+app.delete("/myService/:id", asyncErrorHandler(
+    async(req, res, next)=>{
+        console.log(req.params.id)
+    }
+))
 
 
 //! Updating or Adding  Review Count
@@ -150,6 +176,7 @@ app.get("/serviceReviews", asyncErrorHandler(
         }
     }
 ))
+ 
 
 //! Delete MyReview 
 app.delete("/myReviews/:id", asyncErrorHandler(
