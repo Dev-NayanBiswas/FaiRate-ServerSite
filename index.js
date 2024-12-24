@@ -70,6 +70,27 @@ app.post("/addService", asyncErrorHandler(
 ))
 
 
+//! Search and Get myServices 
+app.get("/myServices", asyncErrorHandler(
+    async(req,res,next)=>{
+        const {email, search} = req.query;
+        if(!email){
+            res.status(400).send({message:"Email Required"})
+        }
+        const filter = {email:email}
+        if(search){
+            filter.serviceTitle={$regex:search, $options:"i"}
+        }
+        try{
+            const result = await services.find(filter).toArray()
+            res.status(200).send({message:"Successfully Data Fetched", result:result})
+        }catch(error){
+            next(new CustomErrors("Error to fetch My Services",500))
+        }
+    }
+))
+
+
 //! Updating or Adding  Review Count
 app.patch("/services/:id", asyncErrorHandler(
     async(req, res, next)=>{
