@@ -111,7 +111,7 @@ app.post("/allReviews", asyncErrorHandler(
     }
 ))
 
-//// Get Service Reviews 
+//! Get Service Reviews 
 app.get("/serviceReviews", asyncErrorHandler(
     async(req,res,next)=>{
         const {serviceID, email} = req.query;
@@ -136,6 +136,20 @@ app.get("/serviceReviews", asyncErrorHandler(
     }
 ))
 
+app.delete("/myReviews/:id", asyncErrorHandler(
+    async(req,res,next)=>{
+        const {id} = req.params;
+        try{
+            const result = await allReviews.deleteOne({_id: new ObjectId(id)});
+            res.status(200).send({
+                message:"Successfully Delete Review",
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Error in Review Delete", 500))
+        }
+    }
+))
 
 
 //!404  notFound Error
