@@ -28,7 +28,7 @@ const { ObjectId } = require('mongodb');
 
 
 
-//! AllServices 
+//! featured Services 
 app.get("/services", asyncErrorHandler(
     async(req,res,next)=>{
         let defaultLimit;
@@ -41,6 +41,8 @@ app.get("/services", asyncErrorHandler(
     }
 ))
 
+
+//!! Get a Specific Service 
 app.get("/services/:id",asyncErrorHandler(
     async(req, res, next)=>{
         const {id} = req.params;
@@ -49,29 +51,21 @@ app.get("/services/:id",asyncErrorHandler(
     }
 ))
 
-app.get("/faiRate", asyncErrorHandler(
-    async(req,res, next)=>{
-            const allData = await allReviews.find({}).toArray();
-            res.send(allData)
-    }
-))
 
-app.post("/faiRate", asyncErrorHandler(
+
+//! Add Service 
+app.post("/addService", asyncErrorHandler(
     async(req, res, next)=>{
-        const myEmail = 'mr.nayan.biswas@gmail.com'
-        const data = {
-            email:myEmail,
-            postedBy:"Nayan",
-            postedOn: formateDate(),
-            reviewCount:0,
-            updatedOn:false,
-
+        const data = req.body;
+        try{
+            const result = await services.insertOne(data);
+            res.status(200).send({
+                message:'Service posted Successfully',
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Error in Adding Service",500))
         }
-        if(!data){
-            throw new CustomErrors("Nothing Founded", 400)
-        }
-        const result = await allReviews.insertOne(data);
-        res.status(200).send(result)
     }
 ))
 
@@ -157,7 +151,6 @@ app.put("/updateReview/:id", asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         const {comment, rating} = req.body
-        console.log(comment, rating)
         const options = {$set:{comment, rating}}
         try{
             const result = await allReviews.updateOne({_id:new ObjectId(id)},options,{upsert:true});
