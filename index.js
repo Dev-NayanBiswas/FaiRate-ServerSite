@@ -28,16 +28,28 @@ const { ObjectId } = require('mongodb');
 
 
 
+//! Unique Categories
+
+
 //! featured Services 
 app.get("/services", asyncErrorHandler(
     async(req,res,next)=>{
         let defaultLimit;
-        const {limit} = req.query;
+        let searchQuery = {}
+        const {limit, search} = req.query;
         if(limit){
             defaultLimit = limit
         }
-        const result = await services.find({}).limit(Number(defaultLimit)).toArray();
-        res.status(200).send(result)
+        if(search){
+            const query = {serviceTitle:{$regex:search, $options:"i"}};
+            searchQuery = query
+        }
+        try{
+            const result = await services.find(searchQuery).limit(Number(defaultLimit)).toArray();
+            res.status(200).send(result)
+        }catch(error){
+            next(new CustomErrors("Error in Loading Services",500))
+        }
     }
 ))
 
