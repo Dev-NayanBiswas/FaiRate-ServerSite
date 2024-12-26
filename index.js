@@ -10,13 +10,27 @@ const PORT = process.env.CUSTOM_PORT || 8000;
 
 app.use(express.json())
 app.use(cookieParser());
-app.use(cors())
+app.use(cors({
+    origin:[
+        "http://localhost:5173",
+        "https://assignment-11-fairate.netlify.app",
+        "assignment-11-b16d8.firebaseapp.com",
+        "assignment-11-b16d8.web.app"
+        ],
+    credentials:true
+}))
+
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  };
 
 
 //! Utilities 
 const formateDate = require("./Utilities/formateDate.js")
 //! DataBase 
-const {allReviews,services} = require('./Config/dataBase.js') 
+const {allReviews,services} = require('./Config/dataBase.js'); 
 //! Custom Error Class 
 const CustomErrors = require('./Errors/CustomErrors.js');
 //! Global Error Handlers 
@@ -25,10 +39,36 @@ const asyncErrorHandler = require('./Controllers/asyncErrorHandler.js');
 const { ObjectId } = require('mongodb');
 
 
+//! Verify Token 
+const verifyToken = (req,res,next)=>{
+    const token = req.cookies.clientToken;
+    if(!token){
+        return res.status(401).send({message:"Unauthorized Access"})
+    }
+    JWT.verify(token,process.env.CLIENT_SECRET,function(err, decoded){
+        if(err){
+            return res.status(401).send({message:"Unauthorized Access"})
+        }
+        req.user = decoded
+        next();
+    })
+}
 
 
-
-//! Unique Categories
+//! JWT token Generate
+app.post('/jsonWebToken',asyncErrorHandler(
+    async(req,res,next)=>{
+        const userCredentials = req.body;
+        const token = JWT.sign(userCredentials, process.env.CLIENT_SECRET, {expiresIn:'5h'});
+        res.cookie("clientToken",token,cookieOptions).send({success:true})
+    }
+))
+//! Clear Cookie 
+app.post("/logout", asyncErrorHandler(
+    async(req,res,next)=>{
+        res.clearCookie('clientToken',cookieOptions).send({message:"Successfully Cleared Cookie"})
+    }
+))
 
 
 //! featured Services 
@@ -66,7 +106,7 @@ app.get("/services/:id",asyncErrorHandler(
 
 
 //! Add Service 
-app.post("/addService", asyncErrorHandler(
+app.post("/addService",verifyToken, asyncErrorHandler(
     async(req, res, next)=>{
         const data = req.body;
         try{
@@ -83,9 +123,16 @@ app.post("/addService", asyncErrorHandler(
 
 
 //! Search and Get myServices 
-app.get("/myServices", asyncErrorHandler(
+app.get("/myServices",verifyToken, asyncErrorHandler(
     async(req,res,next)=>{
+        // console.log(req.cookies)
         const {email, search} = req.query;
+        if(!req.user.email === req.query.email){
+            return res.status(403).send({message:"Forbidden Access"});
+        }
+
+
+
         if(!email){
             res.status(400).send({message:"Email Required"})
         }
@@ -102,12 +149,10 @@ app.get("/myServices", asyncErrorHandler(
     }
 ))
 //! Update MyServices 
-app.put("/updateService/:id", asyncErrorHandler(
+app.put("/updateService/:id",verifyToken, asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
-        console.log(id)
         const data = req.body;
-        console.log(data)
         const updatedData = {
             $set:{...data}
         }
@@ -117,12 +162,11 @@ app.put("/updateService/:id", asyncErrorHandler(
         }catch(error){
             next(new CustomErrors("Error in Updating MyServices", 500))
         }
-        console.log(data, id);
     }
 ))
 
 //! Delete MyService 
-app.delete("/myService/:id", asyncErrorHandler(
+app.delete("/myService/:id",verifyToken, asyncErrorHandler(
     async(req, res, next)=>{
         const{id}=req.params;
         try{
@@ -136,7 +180,7 @@ app.delete("/myService/:id", asyncErrorHandler(
 
 
 //! Updating or Adding  Review Count
-app.patch("/services/:id", asyncErrorHandler(
+app.patch("/services/:id",verifyToken, asyncErrorHandler(
     async(req, res, next)=>{
         const {id} = req.params;
         if(!ObjectId.isValid(id)){
@@ -157,7 +201,7 @@ app.patch("/services/:id", asyncErrorHandler(
 ))
 
 //! Adding Reviews 
-app.post("/allReviews", asyncErrorHandler(
+app.post("/allReviews",verifyToken, asyncErrorHandler(
     async(req,res, next)=>{
         const userInfo = req.body;
         try{
@@ -170,18 +214,42 @@ app.post("/allReviews", asyncErrorHandler(
     }
 ))
 
+//! Get MyReviews 
+app.get("/myReviews",verifyToken, asyncErrorHandler(
+    async(req,res,next)=>{
+        const {email} = req.query;
+
+        if(!req.user.email === req.query.email){
+            return res.status(403).send({message:"Forbidden Access"});
+        }
+        
+        let defaultQuery;
+
+        if(email){
+            defaultQuery = {email};
+        }
+        try{
+            const result = await allReviews.find(defaultQuery).toArray();
+            res.status(200).send({
+                message:"My Reviews Fetched Successfully",
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Failed to Load MyReviews", 500))
+        }
+    }
+))
+
 //! Get Service Reviews 
 app.get("/serviceReviews", asyncErrorHandler(
     async(req,res,next)=>{
-        const {serviceID, email} = req.query;
+        const {serviceID} = req.query;
+        
         let defaultQuery;
 
         if(serviceID){
             const filter = {serviceID}
             defaultQuery = filter
-        }
-        if(email){
-            defaultQuery = {email};
         }
         try{
             const result = await allReviews.find(defaultQuery).toArray();
@@ -197,7 +265,7 @@ app.get("/serviceReviews", asyncErrorHandler(
  
 
 //! Delete MyReview 
-app.delete("/myReviews/:id", asyncErrorHandler(
+app.delete("/myReviews/:id",verifyToken, asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         try{
@@ -213,7 +281,7 @@ app.delete("/myReviews/:id", asyncErrorHandler(
 ))
 
 //! Update MyReview 
-app.put("/updateReview/:id", asyncErrorHandler(
+app.put("/updateReview/:id",verifyToken, asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         const {comment, rating} = req.body
