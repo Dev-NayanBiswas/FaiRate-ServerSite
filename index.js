@@ -1,6 +1,5 @@
 const express = require('express')
 const cors = require('cors');
-// const JWT = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
@@ -12,21 +11,6 @@ app.use(express.json())
 app.use(cookieParser());
 app.use(cors())
 
-// {
-//     origin:[
-//         "http://localhost:5173",
-//         "https://assignment-11-fairate.netlify.app",
-//         "assignment-11-b16d8.firebaseapp.com",
-//         "assignment-11-b16d8.web.app"
-//         ],
-//     credentials:true
-// }
-
-// const cookieOptions = {
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV === "production",
-//     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-//   };
 
 
 //! Utilities 
@@ -41,30 +25,8 @@ const asyncErrorHandler = require('./Controllers/asyncErrorHandler.js');
 const { ObjectId } = require('mongodb');
 
 
-//! Verify Token 
-// const verifyToken = (req,res,next)=>{
-//     const token = req.cookies.clientToken;
-//     if(!token){
-//         return res.status(401).send({message:"Unauthorized Access"})
-//     }
-//     JWT.verify(token,process.env.CLIENT_SECRET,function(err, decoded){
-//         if(err){
-//             return res.status(401).send({message:"Unauthorized Access"})
-//         }
-//         req.user = decoded
-//         next();
-//     })
-// }
 
 
-// //! JWT token Generate
-// app.post('/jsonWebToken',asyncErrorHandler(
-//     async(req,res,next)=>{
-//         const userCredentials = req.body;
-//         const token = JWT.sign(userCredentials, process.env.CLIENT_SECRET, {expiresIn:'5h'});
-//         res.cookie("clientToken",token,cookieOptions).send({success:true})
-//     }
-// ))
 
 
 
@@ -208,11 +170,6 @@ app.post("/allReviews", asyncErrorHandler(
 app.get("/myReviews", asyncErrorHandler(
     async(req,res,next)=>{
         const {email} = req.query;
-
-        // if(!req.user.email === req.query.email){
-        //     return res.status(403).send({message:"Forbidden Access"});
-        // }
-        
         let defaultQuery;
 
         if(email){
