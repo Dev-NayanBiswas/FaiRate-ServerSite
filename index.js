@@ -301,6 +301,4 @@ app.use(GlobalErrorController)
 
 
 
-app.listen(PORT,()=>{
-    console.log("FaiRate is Running on PORT", PORT)
-})
+app.listen(PORT)
