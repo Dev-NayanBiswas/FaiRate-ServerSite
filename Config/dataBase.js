@@ -9,7 +9,7 @@ const client = new MongoClient(uri, {
   }
 });
 
-client.connect();
+// client.connect();
 
 const dataBase = client.db("FaiRate");
 const allReviews = dataBase.collection("AllReviews");

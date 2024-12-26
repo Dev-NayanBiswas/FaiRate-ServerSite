@@ -1,6 +1,6 @@
 const express = require('express')
 const cors = require('cors');
-const JWT = require('jsonwebtoken');
+// const JWT = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
@@ -10,21 +10,23 @@ const PORT = process.env.CUSTOM_PORT || 8000;
 
 app.use(express.json())
 app.use(cookieParser());
-app.use(cors({
-    origin:[
-        "http://localhost:5173",
-        "https://assignment-11-fairate.netlify.app",
-        "assignment-11-b16d8.firebaseapp.com",
-        "assignment-11-b16d8.web.app"
-        ],
-    credentials:true
-}))
+app.use(cors())
 
-const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  };
+// {
+//     origin:[
+//         "http://localhost:5173",
+//         "https://assignment-11-fairate.netlify.app",
+//         "assignment-11-b16d8.firebaseapp.com",
+//         "assignment-11-b16d8.web.app"
+//         ],
+//     credentials:true
+// }
+
+// const cookieOptions = {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === "production",
+//     sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+//   };
 
 
 //! Utilities 
@@ -40,35 +42,30 @@ const { ObjectId } = require('mongodb');
 
 
 //! Verify Token 
-const verifyToken = (req,res,next)=>{
-    const token = req.cookies.clientToken;
-    if(!token){
-        return res.status(401).send({message:"Unauthorized Access"})
-    }
-    JWT.verify(token,process.env.CLIENT_SECRET,function(err, decoded){
-        if(err){
-            return res.status(401).send({message:"Unauthorized Access"})
-        }
-        req.user = decoded
-        next();
-    })
-}
+// const verifyToken = (req,res,next)=>{
+//     const token = req.cookies.clientToken;
+//     if(!token){
+//         return res.status(401).send({message:"Unauthorized Access"})
+//     }
+//     JWT.verify(token,process.env.CLIENT_SECRET,function(err, decoded){
+//         if(err){
+//             return res.status(401).send({message:"Unauthorized Access"})
+//         }
+//         req.user = decoded
+//         next();
+//     })
+// }
 
 
-//! JWT token Generate
-app.post('/jsonWebToken',asyncErrorHandler(
-    async(req,res,next)=>{
-        const userCredentials = req.body;
-        const token = JWT.sign(userCredentials, process.env.CLIENT_SECRET, {expiresIn:'5h'});
-        res.cookie("clientToken",token,cookieOptions).send({success:true})
-    }
-))
-//! Clear Cookie 
-app.post("/logout", asyncErrorHandler(
-    async(req,res,next)=>{
-        res.clearCookie('clientToken',cookieOptions).send({message:"Successfully Cleared Cookie"})
-    }
-))
+// //! JWT token Generate
+// app.post('/jsonWebToken',asyncErrorHandler(
+//     async(req,res,next)=>{
+//         const userCredentials = req.body;
+//         const token = JWT.sign(userCredentials, process.env.CLIENT_SECRET, {expiresIn:'5h'});
+//         res.cookie("clientToken",token,cookieOptions).send({success:true})
+//     }
+// ))
+
 
 
 //! featured Services 
@@ -106,7 +103,7 @@ app.get("/services/:id",asyncErrorHandler(
 
 
 //! Add Service 
-app.post("/addService",verifyToken, asyncErrorHandler(
+app.post("/addService", asyncErrorHandler(
     async(req, res, next)=>{
         const data = req.body;
         try{
@@ -123,16 +120,9 @@ app.post("/addService",verifyToken, asyncErrorHandler(
 
 
 //! Search and Get myServices 
-app.get("/myServices",verifyToken, asyncErrorHandler(
+app.get("/myServices", asyncErrorHandler(
     async(req,res,next)=>{
-        // console.log(req.cookies)
         const {email, search} = req.query;
-        if(!req.user.email === req.query.email){
-            return res.status(403).send({message:"Forbidden Access"});
-        }
-
-
-
         if(!email){
             res.status(400).send({message:"Email Required"})
         }
@@ -149,7 +139,7 @@ app.get("/myServices",verifyToken, asyncErrorHandler(
     }
 ))
 //! Update MyServices 
-app.put("/updateService/:id",verifyToken, asyncErrorHandler(
+app.put("/updateService/:id", asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         const data = req.body;
@@ -166,7 +156,7 @@ app.put("/updateService/:id",verifyToken, asyncErrorHandler(
 ))
 
 //! Delete MyService 
-app.delete("/myService/:id",verifyToken, asyncErrorHandler(
+app.delete("/myService/:id", asyncErrorHandler(
     async(req, res, next)=>{
         const{id}=req.params;
         try{
@@ -180,7 +170,7 @@ app.delete("/myService/:id",verifyToken, asyncErrorHandler(
 
 
 //! Updating or Adding  Review Count
-app.patch("/services/:id",verifyToken, asyncErrorHandler(
+app.patch("/services/:id", asyncErrorHandler(
     async(req, res, next)=>{
         const {id} = req.params;
         if(!ObjectId.isValid(id)){
@@ -201,7 +191,7 @@ app.patch("/services/:id",verifyToken, asyncErrorHandler(
 ))
 
 //! Adding Reviews 
-app.post("/allReviews",verifyToken, asyncErrorHandler(
+app.post("/allReviews", asyncErrorHandler(
     async(req,res, next)=>{
         const userInfo = req.body;
         try{
@@ -215,13 +205,13 @@ app.post("/allReviews",verifyToken, asyncErrorHandler(
 ))
 
 //! Get MyReviews 
-app.get("/myReviews",verifyToken, asyncErrorHandler(
+app.get("/myReviews", asyncErrorHandler(
     async(req,res,next)=>{
         const {email} = req.query;
 
-        if(!req.user.email === req.query.email){
-            return res.status(403).send({message:"Forbidden Access"});
-        }
+        // if(!req.user.email === req.query.email){
+        //     return res.status(403).send({message:"Forbidden Access"});
+        // }
         
         let defaultQuery;
 
@@ -265,7 +255,7 @@ app.get("/serviceReviews", asyncErrorHandler(
  
 
 //! Delete MyReview 
-app.delete("/myReviews/:id",verifyToken, asyncErrorHandler(
+app.delete("/myReviews/:id", asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         try{
@@ -281,7 +271,7 @@ app.delete("/myReviews/:id",verifyToken, asyncErrorHandler(
 ))
 
 //! Update MyReview 
-app.put("/updateReview/:id",verifyToken, asyncErrorHandler(
+app.put("/updateReview/:id", asyncErrorHandler(
     async(req,res,next)=>{
         const {id} = req.params;
         const {comment, rating} = req.body
@@ -314,42 +304,3 @@ app.use(GlobalErrorController)
 app.listen(PORT,()=>{
     console.log("FaiRate is Running on PORT", PORT)
 })
-
-
-
-// let defaultOption = {};
-//     const { searchQuery } = req.query;
-//     const searchOption = { title: { $regex: searchQuery, $options: "i" } };
-//     if (searchQuery) {
-//       defaultOption = searchOption;
-//     }
-//     const bulkMovies = await allMovies.find(defaultOption).toArray();
-//     res.send(bulkMovies);
-
-
-// const ID = req.params.ID;
-//     const specificIdentity = { _id: new ObjectId(ID) };
-//     const { title, summary, rating, release, genre, thumbnail } = req.body;
-//     const updatedValue = {
-//       $set: { title, summary, rating, release, genre, thumbnail },
-//     };
-//     const updateInDB = await allMovies.updateOne(
-//       specificIdentity,
-//       updatedValue,
-//       { upsert: true },
-//     );
-
-
-
-// const getMovies = await allMovies
-//       .find()
-//       .sort({ rating: -1 })
-//       .limit(6)
-//       .toArray();
-//     res.send(getMovies);
-//   } catch (error) {
-//     next(error);
-//   }
-
-
-// {comment, rating, name, email, image, postedDate, serviceID}
