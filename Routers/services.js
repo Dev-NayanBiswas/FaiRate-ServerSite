@@ -11,7 +11,6 @@ router.route("/")
 //! featured Services 
 .get(asyncErrorHandler(
     async(req,res,next)=>{
-        console.log("Running Locally");
         let defaultLimit;
         let searchQuery = {}
         const {limit, search} = req.query;
@@ -30,19 +29,88 @@ router.route("/")
         }
     }
 ))
+.post(asyncErrorHandler(
+    async(req, res, next)=>{
+        const data = req.body;
+        try{
+            const result = await services.insertOne(data);
+            res.status(200).send({
+                message:'Service posted Successfully',
+                result:result
+            })
+        }catch(error){
+            next(new CustomErrors("Error in Adding Service",500))
+        }
+    }
+))
 
 
 router.route("/:id")
 .get(asyncErrorHandler(async(req,res,next)=>{
     try{
         const {id} = req.params;
-        console.log(id);
         const result = await services.findOne({_id: new ObjectId(id)});
         res.send(result)
     }catch(error){
         next(new CustomErrors("Error in Getting Details", 500))
     }
 }))
+.put(asyncErrorHandler(
+    async(req,res,next)=>{
+        const {id} = req.params;
+        const data = req.body;
+        const updatedData = {
+            $set:{...data}
+        }
+        try{
+            const result = await services.updateOne({_id:new ObjectId(id)},updatedData,{upsert:true});
+            res.status(200).send({message:"Successfully Updated", result:result})
+        }catch(error){
+            next(new CustomErrors("Error in Updating MyServices", 500))
+        }
+    }
+))
+.patch(asyncErrorHandler(
+    async(req, res, next)=>{
+        const {id} = req.params;
+        const {count} = req.query;
+        if(!ObjectId.isValid(id)){
+            throw new CustomErrors("Invalid ID", 400)
+        }
+        const filter = {_id: new ObjectId(id)};
+
+        let reviewCountEdit;
+
+        if(parseInt(count)===1){
+            reviewCountEdit = 1
+        }
+        if(parseInt(count)===0){
+            reviewCountEdit = -1
+        }
+
+        const updatedValue = {
+
+            $inc:{reviewCount:reviewCountEdit},
+        };
+        try{
+            const result = await services.updateOne(filter,updatedValue,{upsert:true});
+        res.status(200).send({message:"Review Count Updated", result: result})
+        }catch(error){
+            next(new CustomErrors("Failed to Update Service", 500))
+        }
+    }
+))
+.delete(asyncErrorHandler(
+    async(req, res, next)=>{
+        const{id}=req.params;
+        try{
+            const result = await services.deleteOne({_id: new ObjectId(id)})
+            res.status(200).send({message:"Service Deleted Successfully", result:result})
+        }catch(error){
+            next(new CustomErrors("Error in Removing Service", 500))
+        }
+    }
+))
 
 
 module.exports = router;
