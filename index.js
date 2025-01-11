@@ -7,9 +7,23 @@ const app = express();
 const PORT = process.env.CUSTOM_PORT || 8000;
 
 
+const corsOptions = {
+    origin:['http://localhost:5173'],
+    credentials:true,
+    methods:["GET,HEAD,PUT,PATCH,POST,DELETE"],
+}
+
+
+// const corsOptions = {
+//     origin:["http://localhost:5173"],
+//     credentials:true,
+//     methods:["GET,HEAD,PUT,PATCH,POST,DELETE"],
+//     allowedHeaders:["Content-Type","Authorization"],
+// }
+
 app.use(express.json())
 app.use(cookieParser());
-app.use(cors())
+app.use(cors(corsOptions))
 
 
 
@@ -25,42 +39,48 @@ const asyncErrorHandler = require('./Controllers/asyncErrorHandler.js');
 const { ObjectId } = require('mongodb');
 
 
+const serviceRouters = require("./Routers/services.js")
+
+
+
+app.use("/services", serviceRouters)
+
 
 
 
 
 
 //! featured Services 
-app.get("/services", asyncErrorHandler(
-    async(req,res,next)=>{
-        let defaultLimit;
-        let searchQuery = {}
-        const {limit, search} = req.query;
-        if(limit){
-            defaultLimit = limit
-        }
-        if(search){
-            const query = {serviceTitle:{$regex:search, $options:"i"}};
-            searchQuery = query
-        }
-        try{
-            const result = await services.find(searchQuery).limit(Number(defaultLimit)).toArray();
-            res.status(200).send(result)
-        }catch(error){
-            next(new CustomErrors("Error in Loading Services",500))
-        }
-    }
-))
+// app.get("/services", asyncErrorHandler(
+//     async(req,res,next)=>{
+//         let defaultLimit;
+//         let searchQuery = {}
+//         const {limit, search} = req.query;
+//         if(limit){
+//             defaultLimit = limit
+//         }
+//         if(search){
+//             const query = {serviceTitle:{$regex:search, $options:"i"}};
+//             searchQuery = query
+//         }
+//         try{
+//             const result = await services.find(searchQuery).limit(Number(defaultLimit)).toArray();
+//             res.status(200).send(result)
+//         }catch(error){
+//             next(new CustomErrors("Error in Loading Services",500))
+//         }
+//     }
+// ))
 
 
 //!! Get a Specific Service 
-app.get("/services/:id",asyncErrorHandler(
-    async(req, res, next)=>{
-        const {id} = req.params;
-        const result = await services.findOne({_id: new ObjectId(id)});
-        res.send(result)
-    }
-))
+// app.get("/services/:id",asyncErrorHandler(
+//     async(req, res, next)=>{
+//         const {id} = req.params;
+//         const result = await services.findOne({_id: new ObjectId(id)});
+//         res.send(result)
+//     }
+// ))
 
 
 
@@ -135,13 +155,25 @@ app.delete("/myService/:id", asyncErrorHandler(
 app.patch("/services/:id", asyncErrorHandler(
     async(req, res, next)=>{
         const {id} = req.params;
+        const {count} = req.query;
+        console.log(count);
         if(!ObjectId.isValid(id)){
             throw new CustomErrors("Invalid ID", 400)
         }
         const filter = {_id: new ObjectId(id)};
+
+        let reviewCountEdit;
+
+        if(parseInt(count)===1){
+            reviewCountEdit = 1
+        }
+        if(parseInt(count)===0){
+            reviewCountEdit = -1
+        }
+
         const updatedValue = {
-            // $setOnInsert: {reviewCount:1},
-            $inc:{reviewCount:1},
+
+            $inc:{reviewCount:reviewCountEdit},
         };
         try{
             const result = await services.updateOne(filter,updatedValue,{upsert:true});
@@ -156,6 +188,7 @@ app.patch("/services/:id", asyncErrorHandler(
 app.post("/allReviews", asyncErrorHandler(
     async(req,res, next)=>{
         const userInfo = req.body;
+        console.log(userInfo)
         try{
             const result = await allReviews.insertOne(userInfo);
             res.status(200).send({message:"Review posted Successfully", result: result})
@@ -191,15 +224,17 @@ app.get("/myReviews", asyncErrorHandler(
 app.get("/serviceReviews", asyncErrorHandler(
     async(req,res,next)=>{
         const {serviceID} = req.query;
+        console.log("service review",serviceID);
         
         let defaultQuery;
 
         if(serviceID){
-            const filter = {serviceID}
+            const filter = {serviceID:serviceID}
             defaultQuery = filter
         }
         try{
             const result = await allReviews.find(defaultQuery).toArray();
+            console.log(result)
             res.status(200).send({
                 message:"Review Fetched Successfully",
                 result:result
@@ -258,4 +293,6 @@ app.use(GlobalErrorController)
 
 
 
-app.listen(PORT)
+app.listen(PORT,()=>{
+    console.log(`FaiRate is running on ${PORT}`)
+})

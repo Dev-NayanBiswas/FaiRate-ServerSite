@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = process.env.MONGO_URI;
 
 const client = new MongoClient(uri, {
@@ -21,4 +21,5 @@ const services = dataBase.collection("AllServices");
 module.exports = {
     allReviews,
     services,
+    ObjectId,
 }
